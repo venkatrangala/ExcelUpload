@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30320.27
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MMU.ClientApp", "MMU.ClientApp\MMU.ClientApp.csproj", "{04B8ADB6-67CE-4D36-8B3F-82325F2811E5}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MMU.FileUpload.Api", "MMU.FileUpload.Api\MMU.FileUpload.Api.csproj", "{63DF9122-B814-4BA1-BAB1-06BAC39A470F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{04B8ADB6-67CE-4D36-8B3F-82325F2811E5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{04B8ADB6-67CE-4D36-8B3F-82325F2811E5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{04B8ADB6-67CE-4D36-8B3F-82325F2811E5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{04B8ADB6-67CE-4D36-8B3F-82325F2811E5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{63DF9122-B814-4BA1-BAB1-06BAC39A470F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{63DF9122-B814-4BA1-BAB1-06BAC39A470F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{63DF9122-B814-4BA1-BAB1-06BAC39A470F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{63DF9122-B814-4BA1-BAB1-06BAC39A470F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {477CFFFD-3E68-4A93-A15A-0C84A14F420C}
+	EndGlobalSection
+EndGlobal

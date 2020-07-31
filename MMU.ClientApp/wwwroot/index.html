@@ -1,0 +1,126 @@
+﻿<html>
+<head>
+    <link href="css/bootstrap.css" rel="stylesheet" />
+    <script src="js/jquery-3.5.1.min.js"></script>
+    <script type="text/javascript">
+        $(function () {
+            //debugger
+            $('#btnupload').on('click', function () {
+                var fileExtension = ['xls', 'xlsx'];
+                var filename = $('#fileupload').val();
+                if (filename.length == 0) {
+                    alert("Please select a file.");
+                    return false;
+                }
+                else {
+                    var extension = filename.replace(/^.*\./, '');
+                    if ($.inArray(extension, fileExtension) == -1) {
+                        alert("Please select only excel files.");
+                        return false;
+                    }
+                }
+                var fdata = new FormData();
+                var fileUpload = $("#fileupload").get(0);
+                var files = fileUpload.files;
+                fdata.append(files[0].name, files[0]);
+                //debugger
+                $.ajax({
+                    type: "POST",
+                    url: "http://localhost:60671/api/ExcelFileUpload/UploadFiles/",
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader("XSRF-TOKEN",
+                            $('input:hidden[name="__RequestVerificationToken"]').val());
+                    },
+                    data: fdata,
+                    contentType: false,
+                    processData: false,
+                    success: function (response) {
+                        debugger
+                        if (response.length == 0)
+                            alert('Some error occured while uploading');
+                        else {
+                            $('#divPrint').html(response);
+                            $('#fileupload').val(''); 
+                        }
+                    },
+                    error: function (e) {
+                        debugger
+                        $('#divPrint').html(e.responseText);
+                    }
+                });
+            })
+            $('#btnExport').on('click', function () {
+                var fileExtension = ['xls', 'xlsx'];
+                var filename = $('#fileupload').val();
+                if (filename.length == 0) {
+                    alert("Please select a file then Import");
+                    return false;
+                }
+            });
+        });
+    </script>
+</head>
+<body>
+    <div class="container contact-form">
+        <div class="row">
+            <div class="col-md-12">
+                &nbsp;
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                <div class="contact-image">
+                    <img src="images/logo.PNG" />
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                &nbsp;
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                &nbsp;
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                &nbsp;
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                <h3>Upload Excel File</h3><h5>(Only <b>xls</b> and <b>xlsx</b> extensions are allowed)</h5>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                &nbsp;
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                <form asp-controller="Home" asp-action="Export">
+                    <div class="container">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <input type="file" id="fileupload" name="files" class="form-control" />
+                            </div>
+                            <div class="col-md-3">
+                                <input type="button" name="Upload" value="Upload" id="btnupload" class="btn btn-primary" />
+                            </div>
+                            <div class="col-md-5">
+                            </div>
+                        </div>
+                        <div class="clearfix">&nbsp;</div>
+                        <div class="row">
+                            <div id="divPrint"></div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
