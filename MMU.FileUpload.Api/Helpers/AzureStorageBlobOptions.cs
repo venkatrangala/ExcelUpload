@@ -118,6 +118,7 @@ namespace MMU.FileUpload.Api.Helpers
             try
             {
                 // Create or overwrite the "myblob" blob with contents from a local file.
+                memoryStream.Position = 0;
                 using (var fileStream = memoryStream)
                 {
                     cloudBlockBlob.UploadFromStreamAsync(fileStream);
@@ -156,9 +157,18 @@ namespace MMU.FileUpload.Api.Helpers
 
             var ms = new MemoryStream();
             await cloudBlockBlob.DownloadToStreamAsync(ms);
-
+            ms.Seek(0, SeekOrigin.Begin);
             //var ms = new MemoryStream();
             //await cloudBlockBlob.DownloadToStreamAsync(ms);
+            //https://stackoverflow.com/questions/8624071/save-and-load-memorystream-to-from-a-file
+            //using (FileStream file = new FileStream("file.xlsx", FileMode.Create, System.IO.FileAccess.Write))
+            //{
+            //    byte[] bytes = new byte[ms.Length];
+            //    ms.Read(bytes, 0, (int)ms.Length);
+            //    file.Write(bytes, 0, bytes.Length);
+            //    ms.Close();
+            //}
+
             return ms;
             //return new FileContentResult(ms.ToArray(), cloudBlockBlob.Properties.ContentType);
         }
