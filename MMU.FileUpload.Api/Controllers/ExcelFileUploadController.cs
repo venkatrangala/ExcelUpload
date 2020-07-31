@@ -1,32 +1,22 @@
 ﻿using System;
-using System.Collections.Generic;
-using Microsoft.AspNetCore.Mvc;
-using AutoMapper;
-using System.IdentityModel.Tokens.Jwt;
-using WebApi.Helpers;
-using Microsoft.Extensions.Options;
-using System.Text;
-using Microsoft.IdentityModel.Tokens;
-using System.Security.Claims;
-using Microsoft.AspNetCore.Authorization;
-using WebApi.Services;
-using WebApi.Models;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Logging;
 using System.IO;
-using NPOI.SS.UserModel;
-using NPOI.HSSF.UserModel;
-using NPOI.XSSF.UserModel;
 using System.Linq;
 using System.Net.Http.Headers;
-using Newtonsoft.Json;
-using System.Data;
 using System.Threading.Tasks;
+using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using MMU.FileUpload.Api.Helpers;
+using NPOI.SS.UserModel;
 using NPOI.SS.Util;
+using NPOI.XSSF.UserModel;
+using WebApi.Helpers;
+using WebApi.Services;
 
-namespace WebApi.Controllers
+namespace MMU.FileUpload.Api.Controllers
 {
     //[Authorize]
     [ApiController]
@@ -50,16 +40,150 @@ namespace WebApi.Controllers
             _logger = logger;
         }
 
-        [HttpPost("UploadFiles"), DisableRequestSizeLimit]
+        [HttpPost("UploadFilesToBlob"), DisableRequestSizeLimit]
         [AllowAnonymous]
-        public async Task<IActionResult> UploadFiles() //Blob Storage
+        public async Task<IActionResult> UploadFilesToBlob() //Blob Storage
         {
             try
             {
-                AzureStorageBlobOptions azureStorageBlobOptions = new AzureStorageBlobOptions(_configuration);
+                string containerName = "excel";
+                var azureStorageBlobOptions = new AzureStorageBlobOptions(_configuration);
 
                 var files = Request.Form.Files;
-                await azureStorageBlobOptions.UploadFileAsync(files.FirstOrDefault());
+                await azureStorageBlobOptions.UploadFileAsync(files.FirstOrDefault(), containerName);
+
+                return Ok("File uploaded successfully.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "Internal server error");
+            }
+        }
+
+        [HttpGet("ReadFilesFromBlob")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ReadFilesFromBlob(string blobName)
+        {
+            string containerName = "excel";
+            //string blobName = "rv.xlsx";
+            var azureStorageBlobOptions = new AzureStorageBlobOptions(_configuration);
+
+            const string folderName = "ExcelUploads";
+            var folderPath = Path.Combine(Directory.GetCurrentDirectory(), folderName);
+            var fileEntries = Directory.GetFiles(folderPath);
+            var fileName = fileEntries.FirstOrDefault();
+
+            var ms = await azureStorageBlobOptions.GetAsync(containerName, blobName);
+            ms.Seek(0, SeekOrigin.Begin);
+
+            //Copy the memoryStream from Blob on to local file
+            await using (var fs = new FileStream(fileName, FileMode.OpenOrCreate))
+            {
+                await ms.CopyToAsync(fs);
+                fs.Flush();
+            }
+
+            UpdateExcelForBlobStorageByName(fileName);
+
+            await using var send = new FileStream(fileName, FileMode.Open, FileAccess.Read);
+
+            await using (var memoryStreamToUpdateBlob = new MemoryStream())
+            {
+                await send.CopyToAsync(memoryStreamToUpdateBlob);
+                memoryStreamToUpdateBlob.Position = 0;
+                memoryStreamToUpdateBlob.Seek(0, SeekOrigin.Begin);
+                await azureStorageBlobOptions.UpdateFileAsync(memoryStreamToUpdateBlob, containerName, blobName);
+            }
+
+            ms.Close();
+            return null;
+        }
+
+        /// <summary>
+        /// Read the rows and update the column data
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <returns></returns>
+        public static string UpdateExcelForBlobStorageByName(string fileName)
+        {
+            IWorkbook workbook;
+            ISheet sheet;
+            //IRow row;
+            ICell cell;
+            string sheetName = "CO_Data_input_sheet";
+            using FileStream rstr = new FileStream(fileName, FileMode.Open, FileAccess.Read);
+            workbook = new XSSFWorkbook(rstr);
+            sheet = workbook.GetSheet(sheetName);
+            IRow headerRow = sheet.GetRow(0);
+            int cellCount = headerRow.LastCellNum;
+
+            for (int i = (sheet.FirstRowNum + 1); i <= sheet.LastRowNum; i++)
+            {
+                IRow row = sheet.GetRow(i);
+                if (row == null) continue;
+                if (row.Cells.All(d => d.CellType == CellType.Blank)) continue;
+                for (int j = row.FirstCellNum; j < cellCount; j++)
+                {
+                    if (row.GetCell(j) != null)
+                    {
+                        if (!string.IsNullOrEmpty(row.GetCell(j).ToString()) & ((!string.IsNullOrWhiteSpace(row.GetCell(j).ToString()))))
+                        {
+                            var temp1 = new CellReference(row.GetCell(j));
+                            var reference = temp1.FormatAsString();
+                            if (reference.StartsWith("D"))
+                            {
+                                using FileStream wstr = new FileStream(fileName, FileMode.Create, FileAccess.Write);
+                                cell = row.GetCell(j);
+                                cell.SetCellValue(DateTime.Now.ToShortDateString());
+                                workbook.Write(wstr);
+                                wstr.Close();
+                            }
+                            if (reference.StartsWith("E"))
+                            {
+                                using FileStream wstr = new FileStream(fileName, FileMode.Create, FileAccess.Write);
+                                cell = row.GetCell(j);
+                                cell.SetCellValue("Dev");
+                                workbook.Write(wstr);
+                                wstr.Close();
+                            }
+                        }
+                    }
+                }
+            }
+            rstr.Close();
+
+            return null;
+        }
+
+
+        //LOCAL STORAGE CODE FROM HERE BELOW
+
+        [HttpGet("ReadFiles")]
+        [AllowAnonymous]
+        public IActionResult ReadFiles()
+        {
+            const string folderName = "ExcelUploads";
+            var folderPath = Path.Combine(Directory.GetCurrentDirectory(), folderName);
+
+            var fileEntries = Directory.GetFiles(folderPath);
+
+            foreach (var fileName in fileEntries)
+            {
+                if (fileName.Length > 0)//ProcessFiles
+                {
+                    ReadExcelByName(fileName);
+                }
+            }
+            return Ok();
+        }
+
+        [HttpPost("UploadFiles"), DisableRequestSizeLimit]
+        [AllowAnonymous]
+        public async Task<IActionResult> UploadFiles() //Local Storage
+        {
+            try
+            {
+                var files = Request.Form.Files;
 
                 //Local Directory File Upload below
                 const string folderName = "ExcelUploads";
@@ -87,114 +211,6 @@ namespace WebApi.Controllers
             {
                 return StatusCode(500, "Internal server error");
             }
-        }
-
-        [HttpGet("ReadFilesFromBlob")]
-        [AllowAnonymous]
-        public async Task<IActionResult> ReadFilesFromBlob()
-        {
-
-            AzureStorageBlobOptions azureStorageBlobOptions = new AzureStorageBlobOptions(_configuration);
-
-            var fileName = "rv.xlsx";
-            var fileMemoryStream = await azureStorageBlobOptions.GetAsync(fileName);
-
-            //return fileMemoryStream;
-
-            //byte[] bytes = fileMemoryStream.ToArray();
-
-            //FileStream rstr = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-            MemoryStream memoryStreamBackup = new MemoryStream();
-            //fileMemoryStream.CopyTo(rstr);
-            //var ms = new NpoiMemoryStream();
-            //ms.AllowClose = false;
-            fileMemoryStream.CopyTo(memoryStreamBackup);
-            fileMemoryStream.Position = 0;
-            fileMemoryStream.Seek(0, SeekOrigin.Begin);
-            IWorkbook workbook;
-            ISheet sheet;
-            //IRow row;
-            ICell cell;
-            string sheetName = "CO_Data_input_sheet";
-            //using FileStream rstr = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-            using MemoryStream rstr = fileMemoryStream; // new MemoryStream(fileMemoryStream.ToArray(), true);
-            workbook = new XSSFWorkbook(rstr);
-            sheet = workbook.GetSheet(sheetName);
-            IRow headerRow = sheet.GetRow(0);
-            int cellCount = headerRow.LastCellNum;
-
-            for (int i = (sheet.FirstRowNum + 1); i <= sheet.LastRowNum; i++)
-            {
-                IRow row = sheet.GetRow(i);
-                if (row == null) continue;
-                if (row.Cells.All(d => d.CellType == CellType.Blank)) continue;
-                for (int j = row.FirstCellNum; j < cellCount; j++)
-                {
-                    if (row.GetCell(j) != null)
-                    {
-                        if (!string.IsNullOrEmpty(row.GetCell(j).ToString()) & (!string.IsNullOrWhiteSpace(row.GetCell(j).ToString())))
-                        {
-                            var temp1 = new CellReference(row.GetCell(j));
-                            var reference = temp1.FormatAsString();
-                            if (reference.StartsWith("D"))
-                            {
-                                // using FileStream wstr = new FileStream(fileName, FileMode.Create, FileAccess.Write);
-                                cell = row.GetCell(j);
-                                cell.SetCellValue(DateTime.Now.ToShortDateString());
-                                workbook.Write(rstr);
-                                //wstr.Close();
-                            }
-                            if (reference.StartsWith("E"))
-                            {
-                                //using FileStream wstr = new FileStream(fileName, FileMode.Create, FileAccess.Write);
-                                cell = row.GetCell(j);
-                                cell.SetCellValue("Dev");
-                                workbook.Write(rstr);
-                                //wstr.Close();
-                            }
-                        }
-                    }
-                }
-            }
-            rstr.Close();
-
-            memoryStreamBackup.Position = 0;
-            memoryStreamBackup.Seek(0, SeekOrigin.Begin);
-            await azureStorageBlobOptions.UpdateFileAsync(memoryStreamBackup);
-
-            return null;
-            //const string folderName = "ExcelUploads";
-            //var folderPath = Path.Combine(Directory.GetCurrentDirectory(), folderName);
-
-            //var fileEntries = Directory.GetFiles(folderPath);
-
-            //foreach (var fileName in fileEntries)
-            //{
-            //    if (fileName.Length > 0)//ProcessFiles
-            //    {
-            //        ReadExcelByName(fileName);
-            //    }
-            //}
-            return Ok();
-        }
-
-        [HttpGet("ReadFiles")]
-        [AllowAnonymous]
-        public IActionResult ReadFiles()
-        {
-            const string folderName = "ExcelUploads";
-            var folderPath = Path.Combine(Directory.GetCurrentDirectory(), folderName);
-
-            var fileEntries = Directory.GetFiles(folderPath);
-
-            foreach (var fileName in fileEntries)
-            {
-                if (fileName.Length > 0)//ProcessFiles
-                {
-                    ReadExcelByName(fileName);
-                }
-            }
-            return Ok();
         }
 
         /// <summary>
@@ -253,215 +269,5 @@ namespace WebApi.Controllers
             return null;
         }
 
-        [HttpGet("ReadFilesFromBlobFILEFILE")]
-        [AllowAnonymous]
-        public async Task<IActionResult> ReadFilesFromBlobFILEFILE()
-        {
-            AzureStorageBlobOptions azureStorageBlobOptions = new AzureStorageBlobOptions(_configuration);
-
-            var myFileName = "rv.xlsx";
-            var ms = await azureStorageBlobOptions.GetAsync(myFileName);
-            const string folderName = "ExcelUploads";
-            var folderPath = Path.Combine(Directory.GetCurrentDirectory(), folderName);
-            var fileEntries = Directory.GetFiles(folderPath);
-
-            using (FileStream file = new FileStream("rv.xlsx", FileMode.Create, System.IO.FileAccess.Write))
-            {
-                byte[] bytes = new byte[ms.Length];
-                ms.Read(bytes, 0, (int)ms.Length);
-                file.Write(bytes, 0, bytes.Length);
-                ms.Close();
-            }
-
-
-            var fileName = fileEntries.FirstOrDefault();
-
-            //foreach (var fileName in fileEntries)
-            //{
-            //    if (fileName.Length > 0)//ProcessFiles
-            //    {
-            //        ReadExcelByName(fileName);
-            //    }
-            //}
-
-            //using (FileStream create = new FileStream(fileName, FileMode.Create, FileAccess.Write))
-            //{
-            //    byte[] bytes = new byte[ms.Length];
-            //    ms.Read(bytes, 0, (int)ms.Length);
-            //    create.Write(bytes, 0, bytes.Length);
-            //    ms.Close();
-            //}
-            IWorkbook workbook;
-            ISheet sheet;
-            //IRow row;
-            ICell cell;
-            string sheetName = "CO_Data_input_sheet";
-            using FileStream rstr = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-            workbook = new XSSFWorkbook(rstr);
-            sheet = workbook.GetSheet(sheetName);
-            IRow headerRow = sheet.GetRow(0);
-            int cellCount = headerRow.LastCellNum;
-
-            for (int i = sheet.FirstRowNum + 1; i <= sheet.LastRowNum; i++)
-            {
-                IRow row = sheet.GetRow(i);
-                if (row == null) continue;
-                if (row.Cells.All(d => d.CellType == CellType.Blank)) continue;
-                for (int j = row.FirstCellNum; j < cellCount; j++)
-                {
-                    if (row.GetCell(j) != null)
-                    {
-                        if (!string.IsNullOrEmpty(row.GetCell(j).ToString()) & (!string.IsNullOrWhiteSpace(row.GetCell(j).ToString())))
-                        {
-                            var temp1 = new CellReference(row.GetCell(j));
-                            var reference = temp1.FormatAsString();
-                            if (reference.StartsWith("D"))
-                            {
-                                using FileStream wstr = new FileStream(fileName, FileMode.Create, FileAccess.Write);
-                                cell = row.GetCell(j);
-                                cell.SetCellValue(DateTime.Now.ToShortDateString());
-                                workbook.Write(rstr);
-                                wstr.Close();
-                            }
-                            if (reference.StartsWith("E"))
-                            {
-                                using FileStream wstr = new FileStream(fileName, FileMode.Create, FileAccess.Write);
-                                cell = row.GetCell(j);
-                                cell.SetCellValue("Dev");
-                                workbook.Write(rstr);
-                                wstr.Close();
-                            }
-                        }
-                    }
-                }
-            }
-
-            using FileStream send = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-
-
-            MemoryStream memoryStreamBackup = new MemoryStream();
-            send.CopyTo(memoryStreamBackup);
-            memoryStreamBackup.Position = 0;
-            memoryStreamBackup.Seek(0, SeekOrigin.Begin);
-            await azureStorageBlobOptions.UpdateFileAsync(memoryStreamBackup);
-
-            rstr.Close();
-            ms.Close();
-            return null;
-        }
-
-        static string ReadExcelByNameBkp(string fileName)
-        {
-            DataTable dtTable = new DataTable();
-            List<string> rowList = new List<string>();
-            ISheet sheet;
-            using (var stream = new FileStream(fileName, FileMode.Open, FileAccess.ReadWrite))
-            {
-                stream.Position = 0;
-                XSSFWorkbook xssWorkbook = new XSSFWorkbook(stream);
-                //sheet = xssWorkbook.GetSheet("CO_Data_input_Sheet");
-                sheet = xssWorkbook.GetSheet("COT_Data_input_sheet");
-                IRow headerRow = sheet.GetRow(0);
-                int cellCount = headerRow.LastCellNum;
-                for (int j = 0; j < cellCount; j++)
-                {
-                    ICell cell = headerRow.GetCell(j);
-                    if (cell == null || string.IsNullOrWhiteSpace(cell.ToString())) continue;
-                    {
-                        dtTable.Columns.Add(cell.ToString());
-                    }
-                }
-                for (int i = (sheet.FirstRowNum + 1); i <= sheet.LastRowNum; i++)
-                {
-                    IRow row = sheet.GetRow(i);
-                    if (row == null) continue;
-                    if (row.Cells.All(d => d.CellType == CellType.Blank)) continue;
-                    for (int j = row.FirstCellNum; j < cellCount; j++)
-                    {
-                        if (row.GetCell(j) != null)
-                        {
-                            if (!string.IsNullOrEmpty(row.GetCell(j).ToString()) & ((!string.IsNullOrWhiteSpace(row.GetCell(j).ToString()))))
-                            {
-                                rowList.Add(row.GetCell(j).ToString());
-                            }
-                        }
-                    }
-
-                    if (rowList.Count > 0)
-                        dtTable.Rows.Add(rowList.ToArray());
-                    rowList.Clear();
-                }
-            }
-
-            return JsonConvert.SerializeObject(dtTable);
-        }
-
-        static string ReadExcel(string fileName)
-        {
-            DataTable dtTable = new DataTable();
-            List<string> rowList = new List<string>();
-            ISheet sheet;
-            using (var stream = new FileStream(fileName, FileMode.Open))
-            {
-                stream.Position = 0;
-                XSSFWorkbook xssWorkbook = new XSSFWorkbook(stream);
-                sheet = xssWorkbook.GetSheetAt(0);
-                IRow headerRow = sheet.GetRow(0);
-                int cellCount = headerRow.LastCellNum;
-                for (int j = 0; j < cellCount; j++)
-                {
-                    ICell cell = headerRow.GetCell(j);
-                    if (cell == null || string.IsNullOrWhiteSpace(cell.ToString())) continue;
-                    {
-                        dtTable.Columns.Add(cell.ToString());
-                    }
-                }
-                for (int i = (sheet.FirstRowNum + 1); i <= sheet.LastRowNum; i++)
-                {
-                    IRow row = sheet.GetRow(i);
-                    if (row == null) continue;
-                    if (row.Cells.All(d => d.CellType == CellType.Blank)) continue;
-                    for (int j = row.FirstCellNum; j < cellCount; j++)
-                    {
-                        if (row.GetCell(j) != null)
-                        {
-                            if (!string.IsNullOrEmpty(row.GetCell(j).ToString()) & ((!string.IsNullOrWhiteSpace(row.GetCell(j).ToString()))))
-                            {
-                                rowList.Add(row.GetCell(j).ToString());
-                            }
-                        }
-                    }
-
-                    if (rowList.Count > 0)
-                        dtTable.Rows.Add(rowList.ToArray());
-                    rowList.Clear();
-                }
-            }
-
-            return JsonConvert.SerializeObject(dtTable);
-        }
     }
-
-
-    public class NpoiMemoryStream : MemoryStream
-    {
-        public NpoiMemoryStream()
-        {
-            // We always want to close streams by default to
-            // force the developer to make the conscious decision
-            // to disable it.  Then, they're more apt to remember
-            // to re-enable it.  The last thing you want is to
-            // enable memory leaks by default.  ;-)
-            AllowClose = true;
-        }
-
-        public bool AllowClose { get; set; }
-
-        public override void Close()
-        {
-            if (AllowClose)
-                base.Close();
-        }
-    }
-
 }

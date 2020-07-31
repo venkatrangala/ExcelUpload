@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -16,6 +12,7 @@ namespace MMU.FileUpload.Api.Helpers
 {
     public class AzureStorageBlobOptions
     {
+        //TODO: Get the Azure connections from configuration / appSettings
         private readonly IConfiguration _configuration;
 
         public AzureStorageBlobOptions(IConfiguration configuration)
@@ -23,7 +20,7 @@ namespace MMU.FileUpload.Api.Helpers
             _configuration = configuration;
         }
 
-        public async Task<IActionResult> UploadFileAsync(IFormFile file)
+        public async Task<IActionResult> UploadFileAsync(IFormFile file, string containerName)
         {
             var cloudStorageAccount =
                 CloudStorageAccount.Parse("UseDevelopmentStorage=true;");
@@ -31,7 +28,6 @@ namespace MMU.FileUpload.Api.Helpers
 
             var cloudBlobClient =
                 cloudStorageAccount.CreateCloudBlobClient();
-            string containerName = "excel"; // + Guid.NewGuid();
 
             // Create a container for organizing blobs within the storage account.
             Console.WriteLine("1. Creating Container");
@@ -78,7 +74,7 @@ namespace MMU.FileUpload.Api.Helpers
         }
 
 
-        public async Task<IActionResult> UpdateFileAsync(MemoryStream memoryStream)
+        public async Task<IActionResult> UpdateFileAsync(MemoryStream memoryStream, string containerName, string blobName)
         {
             var cloudStorageAccount =
                 CloudStorageAccount.Parse("UseDevelopmentStorage=true;");
@@ -86,7 +82,6 @@ namespace MMU.FileUpload.Api.Helpers
 
             var cloudBlobClient =
                 cloudStorageAccount.CreateCloudBlobClient();
-            string containerName = "excel"; // + Guid.NewGuid();
 
             // Create a container for organizing blobs within the storage account.
             Console.WriteLine("1. Creating Container");
@@ -107,9 +102,6 @@ namespace MMU.FileUpload.Api.Helpers
                 throw;
             }
 
-            //_configuration["AzureStorage:FilePath"]);
-            var blobName = "rv.xlsx";
-            
             var cloudBlockBlob =
                 cloudBlobContainer.GetBlockBlobReference(blobName);
 
@@ -117,11 +109,10 @@ namespace MMU.FileUpload.Api.Helpers
 
             try
             {
-                // Create or overwrite the "myblob" blob with contents from a local file.
                 memoryStream.Position = 0;
-                using (var fileStream = memoryStream)
+                await using (var fileStream = memoryStream)
                 {
-                    cloudBlockBlob.UploadFromStreamAsync(fileStream);
+                    await cloudBlockBlob.UploadFromStreamAsync(fileStream);
                 }
 
             }
@@ -131,26 +122,20 @@ namespace MMU.FileUpload.Api.Helpers
                 throw;
             }
 
-
             return new OkObjectResult(new { name = blobName });
         }
 
-        public async Task<MemoryStream> GetAsync(
-            string name)
+        public async Task<MemoryStream> GetAsync(string containerName, string blobName)
         {
             var cloudStorageAccount =
                 CloudStorageAccount.Parse("UseDevelopmentStorage=true;");
             //CloudStorageAccount.Parse(
-                    //_configuration["AzureStorage:ConnectionString"]);
+            //_configuration["AzureStorage:ConnectionString"]);
 
             var cloudBlobClient =
                 cloudStorageAccount.CreateCloudBlobClient();
 
-            string containerName = "excel"; // + Guid.NewGuid();
-
             CloudBlobContainer cloudBlobContainer = cloudBlobClient.GetContainerReference(containerName);
-            
-            var blobName = name;
 
             var cloudBlockBlob =
                 cloudBlobContainer.GetBlockBlobReference(blobName);
@@ -158,18 +143,16 @@ namespace MMU.FileUpload.Api.Helpers
             var ms = new MemoryStream();
             await cloudBlockBlob.DownloadToStreamAsync(ms);
             ms.Seek(0, SeekOrigin.Begin);
-            //var ms = new MemoryStream();
-            //await cloudBlockBlob.DownloadToStreamAsync(ms);
-            //https://stackoverflow.com/questions/8624071/save-and-load-memorystream-to-from-a-file
-            //using (FileStream file = new FileStream("file.xlsx", FileMode.Create, System.IO.FileAccess.Write))
-            //{
-            //    byte[] bytes = new byte[ms.Length];
-            //    ms.Read(bytes, 0, (int)ms.Length);
-            //    file.Write(bytes, 0, bytes.Length);
-            //    ms.Close();
-            //}
 
             return ms;
+
+
+            //https://stackoverflow.com/questions/8624071/save-and-load-memorystream-to-from-a-file
+            //using (FileStream fs = new FileStream("file.xlsx", FileMode.OpenOrCreate))
+            //{
+            //    ms.CopyTo(fs);
+            //    fs.Flush();
+            //}
             //return new FileContentResult(ms.ToArray(), cloudBlockBlob.Properties.ContentType);
         }
     }
