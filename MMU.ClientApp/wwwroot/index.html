@@ -26,7 +26,7 @@
                 //debugger
                 $.ajax({
                     type: "POST",
-                    url: "http://localhost:60671/api/ExcelFileUpload/UploadFiles/",
+                    url: "http://localhost:60671/api/ExcelFileUpload/UploadFilesToBlob/",
                     beforeSend: function (xhr) {
                         xhr.setRequestHeader("XSRF-TOKEN",
                             $('input:hidden[name="__RequestVerificationToken"]').val());

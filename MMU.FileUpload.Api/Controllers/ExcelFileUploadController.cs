@@ -96,7 +96,8 @@ namespace MMU.FileUpload.Api.Controllers
             }
 
             ms.Close();
-            return null;
+            
+            return Ok();
         }
 
         /// <summary>
