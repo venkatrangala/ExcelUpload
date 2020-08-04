@@ -64,7 +64,7 @@ namespace MMU.FileUpload.Api.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> ReadFilesFromBlob(string blobName)
         {
-            string containerName = "excel";
+            var containerName = "excel";
             //string blobName = "rv.xlsx";
             var azureStorageBlobOptions = new AzureStorageBlobOptions(_configuration);
 
@@ -77,7 +77,7 @@ namespace MMU.FileUpload.Api.Controllers
             ms.Seek(0, SeekOrigin.Begin);
 
             //Copy the memoryStream from Blob on to local file
-            await using (var fs = new FileStream(fileName, FileMode.OpenOrCreate))
+            await using (var fs = new FileStream(fileName ?? throw new InvalidOperationException(), FileMode.OpenOrCreate))
             {
                 await ms.CopyToAsync(fs);
                 fs.Flush();
@@ -107,14 +107,11 @@ namespace MMU.FileUpload.Api.Controllers
         /// <returns></returns>
         public static string UpdateExcelForBlobStorageByName(string fileName)
         {
-            IWorkbook workbook;
-            ISheet sheet;
             //IRow row;
-            ICell cell;
             string sheetName = "CO_Data_input_sheet";
             using FileStream rstr = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-            workbook = new XSSFWorkbook(rstr);
-            sheet = workbook.GetSheet(sheetName);
+            IWorkbook workbook = new XSSFWorkbook(rstr);
+            var sheet = workbook.GetSheet(sheetName);
             IRow headerRow = sheet.GetRow(0);
             int cellCount = headerRow.LastCellNum;
 
@@ -127,10 +124,26 @@ namespace MMU.FileUpload.Api.Controllers
                 {
                     if (row.GetCell(j) != null)
                     {
-                        if (!string.IsNullOrEmpty(row.GetCell(j).ToString()) & ((!string.IsNullOrWhiteSpace(row.GetCell(j).ToString()))))
+                        if (!string.IsNullOrEmpty(row.GetCell(j).ToString()) & !string.IsNullOrWhiteSpace(row.GetCell(j).ToString()))
                         {
                             var temp1 = new CellReference(row.GetCell(j));
                             var reference = temp1.FormatAsString();
+                            ICell cell;
+                            //Get the CourseId & AcademicPeriod & fetch RecordID
+                            string courseId = string.Empty;
+                            string academicPeriod = string.Empty;
+                            if (reference.StartsWith("A")) //CourseId
+                            {
+                                courseId = row.GetCell(j).StringCellValue;
+                            }
+                            if (reference.StartsWith("B")) //AcademicPeriod
+                            {
+                                academicPeriod = row.GetCell(j).StringCellValue;
+                            }
+
+                            //If we got CourseId & AcademicPeriod then fetch RecordID
+                            //TODO: Fetch RecordID
+
                             if (reference.StartsWith("D"))
                             {
                                 using FileStream wstr = new FileStream(fileName, FileMode.Create, FileAccess.Write);

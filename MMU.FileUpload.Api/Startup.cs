@@ -17,6 +17,8 @@ using AutoMapper;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using MMU.FileUpload.Api.Helpers;
+using MMU.FileUpload.Api.Services;
 
 namespace WebApi
 {
@@ -65,6 +67,12 @@ namespace WebApi
             var appSettings = appSettingsSection.Get<AppSettings>();
             var key = Encoding.ASCII.GetBytes(appSettings.Secret);
 
+            services.AddHttpClient("FetchIdClient", c =>
+            {
+                c.BaseAddress = new Uri(appSettings.BaseUrl);
+                c.DefaultRequestHeaders.Add("Accept", "application/json");
+            });
+
             //services.AddAuthentication(x =>
             //{
             //    x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -101,7 +109,10 @@ namespace WebApi
             // configure DI for application services
             //services.AddScoped<IUserService, UserService>();
             //services.AddScoped<IGuestService, GuestService>();
+
+
             services.AddScoped<IFileUploadService, FileUploadService>();
+            services.AddScoped<IFetchIdService, FetchIdService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
