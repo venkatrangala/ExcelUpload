@@ -189,6 +189,7 @@ namespace MMU.Functions.Helpers
                             }
                             else
                             {
+                             //Log on to Excel and continue
                                 //TODO: What needs doing?
                             }
 
