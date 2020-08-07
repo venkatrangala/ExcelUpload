@@ -12,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -82,129 +83,140 @@ namespace MMU.Functions.Helpers
         /// <returns></returns>
         public string UpdateExcelForBlobStorageByName(string fileName)
         {
-            string sheetName = "CO_Data_input_sheet";
-            using FileStream rstr = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-            IWorkbook workbook = new XSSFWorkbook(rstr);
-            var sheet = workbook.GetSheet(sheetName);
-            IRow headerRow = sheet.GetRow(0);
-            int cellCount = headerRow.LastCellNum;
-            
-
-            for (int i = (sheet.FirstRowNum + 1); i <= sheet.LastRowNum; i++)
+            try
             {
-                IRow row = sheet.GetRow(i);
-                if (row == null) continue;
-                if (row.Cells.All(d => d.CellType == CellType.Blank)) continue;
+                string sheetName = "CO_Data_input_sheet";
+                using FileStream rstr = new FileStream(fileName, FileMode.Open, FileAccess.Read);
+                IWorkbook workbook = new XSSFWorkbook(rstr);
+                var sheet = workbook.GetSheet(sheetName);
+                IRow headerRow = sheet.GetRow(0);
+                int cellCount = headerRow.LastCellNum;
 
-                string courseId = string.Empty;
-                string academicPeriod = string.Empty;
-                int id;
-
-                
-                int j = 0;
-
-                for (j = row.FirstCellNum; j < cellCount; j++)
+                for (int i = (sheet.FirstRowNum + 1); i <= sheet.LastRowNum; i++)
                 {
-                    if (row.GetCell(j) != null)
+                    IRow row = sheet.GetRow(i);
+                    if (row == null) continue;
+                    if (row.Cells.All(d => d.CellType == CellType.Blank)) continue;
+
+                    string courseId = string.Empty;
+                    string academicPeriod = string.Empty;
+                    int id;
+
+
+                    int j = 0;
+
+                    for (j = row.FirstCellNum; j < cellCount; j++)
                     {
-                        //if (!string.IsNullOrEmpty(row.GetCell(j).ToString()) & !string.IsNullOrWhiteSpace(row.GetCell(j).ToString()))
+                        if (row.GetCell(j) != null)
                         {
-                            var temp1 = new CellReference(row.GetCell(j));
-                            var reference = temp1.FormatAsString();
-                            ICell cell;
-
-                            //Get the CourseId & AcademicPeriod & fetch RecordID
-                            if (reference.StartsWith("A")) //CourseId
+                            //if (!string.IsNullOrEmpty(row.GetCell(j).ToString()) & !string.IsNullOrWhiteSpace(row.GetCell(j).ToString()))
                             {
-                                courseId = row.GetCell(j).StringCellValue;
-                            }
-                            if (reference.StartsWith("B")) //AcademicPeriod
-                            {
-                                academicPeriod = row.GetCell(j).StringCellValue;
-                            }
+                                var temp1 = new CellReference(row.GetCell(j));
+                                var reference = temp1.FormatAsString();
+                                ICell cell;
 
-                            //If we got CourseId & AcademicPeriod then fetch RecordID
-                            if (!string.IsNullOrEmpty(courseId) && !string.IsNullOrEmpty(academicPeriod))
-                            {  //TODO: Fetch RecordID
-                                //var query = @"Select  Co.Id
-                                //     from ACCourseOffering CO
-                                //     left join ACAcademicPeriod AP on AP.ID = CO.AcademicPeriodID
-                                //     left join ACCourseLevel ACL on CO.CourseLevelID = ACL.Id
-                                //     left join BCPriceGroup Price on Co.PriceGroupID = Price. ID
-                                //     left join ACCourseOffModes ACM on ACM.CourseOfferingID = CO.Id
-                                //     left join ACEnrollmentMode EM on EM.id = ACM.CourseEnrollmentModeID
-                                //     Where Co.CourseID  = '" + courseId + "' and AP.BusinessMeaningName = '" + academicPeriod + "'";
-
-                                //var id = _dataService.Query<int>("vertical_replica_preview", query);
-                                id = 101;
-
-                                if (id != null && id > 0)
+                                //Get the CourseId & AcademicPeriod & fetch RecordID
+                                if (reference.StartsWith("A")) //CourseId
                                 {
-
-
-                                    if (reference.StartsWith("D"))
-                                    {
-                                        using FileStream wstr = new FileStream(fileName, FileMode.Create, FileAccess.Write);
-                                        cell = row.GetCell(j);
-                                        cell.SetCellValue(DateTime.Now.ToShortDateString());
-                                        workbook.Write(wstr);
-                                        wstr.Close();
-                                    }
-                                    if (reference.StartsWith("E"))
-                                    {
-                                        using FileStream wstr = new FileStream(fileName, FileMode.Create, FileAccess.Write);
-                                        cell = row.GetCell(j);
-                                        cell.SetCellValue(DateTime.Now.AddYears(1).ToShortDateString());
-                                        workbook.Write(wstr);
-                                        wstr.Close();
-                                    }
-                                    if (reference.StartsWith("I"))//CourseLevelid
-                                    {
-                                        using FileStream wstr = new FileStream(fileName, FileMode.Create, FileAccess.Write);
-                                        cell = row.GetCell(j);
-                                        cell.SetCellValue(id);
-                                        workbook.Write(wstr);
-                                        wstr.Close();
-                                    }
+                                    courseId = row.GetCell(j).StringCellValue;
+                                }
+                                if (reference.StartsWith("B")) //AcademicPeriod
+                                {
+                                    academicPeriod = row.GetCell(j).StringCellValue;
                                 }
 
-                                //if (reference.StartsWith("D"))
-                                //{
-                                //    using FileStream wstr = new FileStream(fileName, FileMode.Create, FileAccess.Write);
-                                //    cell = row.GetCell(j);
-                                //    cell.SetCellValue(DateTime.Now.ToShortDateString());
-                                //    workbook.Write(wstr);
-                                //    wstr.Close();
-                                //}
-                                //if (reference.StartsWith("E"))
-                                //{
-                                //    using FileStream wstr = new FileStream(fileName, FileMode.Create, FileAccess.Write);
-                                //    cell = row.GetCell(j);
-                                //    cell.SetCellValue(DateTime.Now.AddYears(1).ToShortDateString());
-                                //    workbook.Write(wstr);
-                                //    wstr.Close();
-                                //}
+                                //If we got CourseId & AcademicPeriod then fetch RecordID
+                                if (!string.IsNullOrEmpty(courseId) && !string.IsNullOrEmpty(academicPeriod))
+                                {  //TODO: Fetch RecordID
+                                   //var query = @"Select  Co.Id
+                                   //     from ACCourseOffering CO
+                                   //     left join ACAcademicPeriod AP on AP.ID = CO.AcademicPeriodID
+                                   //     left join ACCourseLevel ACL on CO.CourseLevelID = ACL.Id
+                                   //     left join BCPriceGroup Price on Co.PriceGroupID = Price. ID
+                                   //     left join ACCourseOffModes ACM on ACM.CourseOfferingID = CO.Id
+                                   //     left join ACEnrollmentMode EM on EM.id = ACM.CourseEnrollmentModeID
+                                   //     Where Co.CourseID  = '" + courseId + "' and AP.BusinessMeaningName = '" + academicPeriod + "'";
+                                    var query = @"Select co.id,Co.CourseTitle from ACCourseoffering co
+                                            Where co.courseid = 'CR6G6Z1113A'
+                                            and id = 1";
+                                    dynamic recordId = 0;
+                                    try
+                                    {
+                                        recordId = _dataService.Query<int>("u4clone", query).FirstOrDefault();
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        throw;
+                                    }
+                                    if (recordId != null && Convert.ToInt32(recordId) > 0)
+                                    {
+                                        if (reference.StartsWith("D"))
+                                        {
+                                            using FileStream wstr = new FileStream(fileName, FileMode.Create, FileAccess.Write);
+                                            cell = row.GetCell(j);
+                                            cell.SetCellValue(DateTime.Now.ToShortDateString());
+                                            workbook.Write(wstr);
+                                            wstr.Close();
+                                        }
+                                        if (reference.StartsWith("E"))
+                                        {
+                                            using FileStream wstr = new FileStream(fileName, FileMode.Create, FileAccess.Write);
+                                            cell = row.GetCell(j);
+                                            cell.SetCellValue(DateTime.Now.AddYears(1).ToShortDateString());
+                                            workbook.Write(wstr);
+                                            wstr.Close();
+                                        }
+                                        if (reference.StartsWith("K"))//CourseLevelid
+                                        {
+                                            using FileStream wstr = new FileStream(fileName, FileMode.Create, FileAccess.Write);
+                                            cell = row.GetCell(j);
+                                            cell.SetCellValue(Convert.ToDouble(recordId));
+                                            workbook.Write(wstr);
+                                            wstr.Close();
+                                        }
+                                    }
 
+                                    //if (reference.StartsWith("D"))
+                                    //{
+                                    //    using FileStream wstr = new FileStream(fileName, FileMode.Create, FileAccess.Write);
+                                    //    cell = row.GetCell(j);
+                                    //    cell.SetCellValue(DateTime.Now.ToShortDateString());
+                                    //    workbook.Write(wstr);
+                                    //    wstr.Close();
+                                    //}
+                                    //if (reference.StartsWith("E"))
+                                    //{
+                                    //    using FileStream wstr = new FileStream(fileName, FileMode.Create, FileAccess.Write);
+                                    //    cell = row.GetCell(j);
+                                    //    cell.SetCellValue(DateTime.Now.AddYears(1).ToShortDateString());
+                                    //    workbook.Write(wstr);
+                                    //    wstr.Close();
+                                    //}
+
+
+                                }
+                                else
+                                {
+                                    //Log on to Excel and continue
+                                    //TODO: What needs doing?
+                                }
 
                             }
-                            else
-                            {
-                             //Log on to Excel and continue
-                                //TODO: What needs doing?
-                            }
-
                         }
                     }
+
+
                 }
 
-                
+
+                rstr.Close();
+
+                return null;
             }
-
-            
-            rstr.Close();
-
+            catch (Exception ex)
+            {
+            }
             return null;
         }
-
     }
 }

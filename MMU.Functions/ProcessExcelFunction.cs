@@ -37,7 +37,7 @@ namespace MMU.Functions
 
             ExcelProcessingHelper excelProcessingHelper = new ExcelProcessingHelper(_loggerProvider, _dataService,_configuration);
 
-            string blobName = "rv.xlsx";
+            string blobName = "UpdateCourseOfferingTemplate.xlsx";
 
             await excelProcessingHelper.ReadFilesFromBlob(blobName);
 
