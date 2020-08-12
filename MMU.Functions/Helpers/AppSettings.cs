@@ -5,4 +5,5 @@ namespace MMU.Functions.Helpers
         public string BaseUrl { get; set; }
         public string Secret { get; set; }
     }
+
 }

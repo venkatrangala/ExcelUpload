@@ -11,6 +11,9 @@ using MMU.Functions.Helpers;
 using Microsoft.Extensions.Configuration;
 using Mmu.Integration.Common.Utilities.Management.Interfaces;
 using Mmu.Integration.Common.Utilities.Data.Interfaces;
+using Mmu.Common.Api.Service.Interfaces;
+using Microsoft.Extensions.Options;
+using Mmu.Common.Api.Service.Models;
 
 namespace MMU.Functions
 {
@@ -19,12 +22,21 @@ namespace MMU.Functions
         private readonly IConfiguration _configuration;
         private readonly ILoggerInjector _loggerProvider;
         private readonly IDataService _dataService;
+        private readonly ITokenService<TokenInfo> _tokenService;
+        private readonly IHttpRequestMessageFactory _messageFactory;
+        private readonly IOptions<EndPointConfigU4> _config;
 
-        public ProcessExcelFunction(ILoggerInjector loggerProvider, IDataService dataService, IConfiguration configuration) //IOptions<AppSettings> appSettings, ILogger<ExcelProcessingHelper> logger,
+        public ProcessExcelFunction(ILoggerInjector loggerProvider, IDataService dataService, IConfiguration configuration,
+            IHttpRequestMessageFactory messageFactory,
+            ITokenService<TokenInfo> tokenService,
+            IOptions<EndPointConfigU4> options) //IOptions<AppSettings> appSettings, ILogger<ExcelProcessingHelper> logger,
         {
             _dataService = dataService;
             _loggerProvider = loggerProvider;
             _configuration = configuration;
+            _messageFactory = messageFactory;
+            _tokenService = tokenService;
+            _config = options;
             //_appSettings = appSettings.Value;
             //_logger = logger;
         }
@@ -35,9 +47,9 @@ namespace MMU.Functions
             ILogger log)
         {
 
-            ExcelProcessingHelper excelProcessingHelper = new ExcelProcessingHelper(_loggerProvider, _dataService,_configuration);
+            ExcelProcessingHelper excelProcessingHelper = new ExcelProcessingHelper(_loggerProvider, _dataService,_configuration, _messageFactory, _tokenService, _config);
 
-            string blobName = "UpdateCourseOfferingTemplate.xlsx";
+            string blobName = "UpdateCourseOfferingCourseOfferingTemplate.xlsx";
 
             await excelProcessingHelper.ReadFilesFromBlob(blobName);
 

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
 using Mmu.Common.Api.Service.Interfaces;
 using Mmu.Common.Api.Service.Models;
+using MMU.Functions.Interfaces;
 
 namespace MMU.Functions.Helpers
 {

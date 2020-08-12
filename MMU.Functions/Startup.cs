@@ -1,6 +1,8 @@
 ﻿using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Mmu.Common.Api.Service.Authentication;
+using Mmu.Common.Api.Service.Interfaces;
 using Mmu.Functions;
 using Mmu.Integration.Common.Utilities.Data;
 using Mmu.Integration.Common.Utilities.Data.Extensions;
@@ -8,6 +10,8 @@ using Mmu.Integration.Common.Utilities.FieldTransform;
 using Mmu.Integration.Common.Utilities.Management;
 using Mmu.Integration.Common.Utilities.Management.Interfaces;
 using Mmu.Integration.Common.Utilities.Mapping;
+using MMU.Functions.Helpers;
+using MMU.Functions.Interfaces;
 //using Mmu.Integration.StudentSupportPackage;
 using System.Collections.Generic;
 using System.Linq;
@@ -36,6 +40,8 @@ namespace Mmu.Functions
             //builder.Services.AddSingleton<ITransformer, HesaModeOfAttendanceTransfomer>();
             builder.Services.AddScoped<IETLService, ETLService>();
             builder.Services.AddScoped<ILoggerInjector, LoggerInjector>();
+            builder.Services.AddSingleton<IHttpRequestMessageFactory, TokenMessageFactory>();
+            //builder.Services.AddSingleton<ITokenService<CookieInfo>, TokenService<CookieInfo>>();
 
         }
     }
