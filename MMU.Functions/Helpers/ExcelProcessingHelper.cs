@@ -201,7 +201,7 @@ namespace MMU.Functions.Helpers
                             {
                                 var query = @"Select cot.id from ACCourseofferingTemplate cot
                                             Where cot.courseid ='" + courseId + "'";
-                                
+
                                 try
                                 {
                                     recordId = _dataService.Query<int>("u4clone", query).FirstOrDefault();
@@ -259,7 +259,7 @@ namespace MMU.Functions.Helpers
                                                 message.Headers.Add("unit4_id", _config.Unit4IdClaim);
 
 
-                                               // var message = await _messageFactory.CreateMessage(HttpMethod.Put, apiUri, payload.ToString());
+                                                // var message = await _messageFactory.CreateMessage(HttpMethod.Put, apiUri, payload.ToString());
                                                 //Send the request and wait for the response
                                                 //var result = await _unit4Service.SendAsync(request.Path, queryPayload.Item1, queryPayload.Item2, request.Path.Contains("update"));
 
@@ -326,7 +326,7 @@ namespace MMU.Functions.Helpers
                 }
             }
         }
-        
+
         private bool ValidateDates(string startDate, string endDate)
         {
             return DateTime.TryParse(startDate, out DateTime _) == true &&
