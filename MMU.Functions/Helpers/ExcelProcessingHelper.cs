@@ -202,7 +202,7 @@ namespace MMU.Functions.Helpers
                             {
                                 var query = @"Select cot.id from ACCourseofferingTemplate cot
                                             Where cot.courseid ='" + courseId + "'";
-                                
+
                                 try
                                 {
                                     recordId = _dataService.Query<int>("u4clone", query).FirstOrDefault();
@@ -325,7 +325,7 @@ namespace MMU.Functions.Helpers
                 }
             }
         }
-        
+
         private bool ValidateDates(string startDate, string endDate)
         {
             return DateTime.TryParse(startDate, out DateTime _) == true &&
