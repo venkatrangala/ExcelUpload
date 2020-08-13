@@ -14,6 +14,7 @@ using Mmu.Integration.Common.Utilities.Data.Interfaces;
 using Mmu.Common.Api.Service.Interfaces;
 using Microsoft.Extensions.Options;
 using Mmu.Common.Api.Service.Models;
+using System.Net.Http;
 
 namespace MMU.Functions
 {
@@ -24,17 +25,20 @@ namespace MMU.Functions
         private readonly IDataService _dataService;
         //private readonly ITokenService<TokenInfo> _tokenService;
         private readonly IHttpRequestMessageFactory _messageFactory;
+        private IHttpClientProvider _httpClient;
         //private readonly IOptions<EndPointConfigU4> _config;
 
         public ProcessExcelFunction(ILoggerInjector loggerProvider, IDataService dataService, IConfiguration configuration,
             IHttpRequestMessageFactory messageFactory,
             ITokenService<TokenInfo> tokenService,
-            IOptions<EndPointConfigU4> options) //IOptions<AppSettings> appSettings, ILogger<ExcelProcessingHelper> logger,
+            IOptions<EndPointConfigU4> options,
+            IHttpClientProvider httpClientProvider) //IOptions<AppSettings> appSettings, ILogger<ExcelProcessingHelper> logger,
         {
             _dataService = dataService;
             _loggerProvider = loggerProvider;
             _configuration = configuration;
             _messageFactory = messageFactory;
+            _httpClient = httpClientProvider;
             //_tokenService = tokenService;
             //_config = options;
             //_appSettings = appSettings.Value;
@@ -47,7 +51,7 @@ namespace MMU.Functions
             ILogger log)
         {
 
-            ExcelProcessingHelper excelProcessingHelper = new ExcelProcessingHelper(_loggerProvider, _dataService, _configuration, _messageFactory); //, _tokenService, _config);
+            ExcelProcessingHelper excelProcessingHelper = new ExcelProcessingHelper(_loggerProvider, _dataService, _configuration, _messageFactory, _httpClient); //, _tokenService, _config);
 
             string blobName = "UpdateCourseOfferingCourseOfferingTemplate.xlsx";
 

@@ -8,6 +8,7 @@ using Mmu.Integration.Common.Utilities.Data;
 using Mmu.Integration.Common.Utilities.Data.Interfaces;
 using Mmu.Integration.Common.Utilities.Management.Interfaces;
 using MMU.Functions.Models;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NPOI.SS.UserModel;
 using NPOI.SS.Util;
@@ -30,13 +31,14 @@ namespace MMU.Functions.Helpers
         private readonly ILoggerInjector _loggerProvider;
         private readonly IDataService _dataService;
         private readonly IConfiguration _configuration;
-        private readonly HttpClient _httpClient;
+        private HttpClient _httpClient;
         //private readonly ITokenService<TokenInfo> _tokenService;
         private readonly IHttpRequestMessageFactory _messageFactory;
         //private readonly EndPointConfigU4 _config;
         public ExcelProcessingHelper(ILoggerInjector loggerProvider,
             IDataService dataService, IConfiguration configuration,
-            IHttpRequestMessageFactory messageFactory
+            IHttpRequestMessageFactory messageFactory,
+            IHttpClientProvider httpClientProvider
             //ITokenService<TokenInfo> tokenService,
             //IOptions<EndPointConfigU4> options
             )//IOptions<AppSettings> appSettings, ILogger<ExcelProcessingHelper> logger,
@@ -45,6 +47,7 @@ namespace MMU.Functions.Helpers
             _loggerProvider = loggerProvider;
             _configuration = configuration;
             _messageFactory = messageFactory;
+            _httpClient = httpClientProvider.HttpClient;
             //_tokenService = tokenService;
             //_config = options.Value;
             //_appSettings = appSettings.Value;
@@ -226,7 +229,7 @@ namespace MMU.Functions.Helpers
                                 }
 
                                 //TODO: Validate Dates
-                                if (!string.IsNullOrEmpty(startDate) && !string.IsNullOrEmpty(endDate))
+                                if (string.IsNullOrEmpty(successValue) && string.IsNullOrEmpty(errorValue) && !string.IsNullOrEmpty(startDate) && !string.IsNullOrEmpty(endDate))
                                 {
                                     //if (reference.StartsWith("K") )//CourseLevelid
                                     {
@@ -256,9 +259,9 @@ namespace MMU.Functions.Helpers
                                                 //var tokenInfo = await _tokenService.GetToken();
                                                 //message.Headers.Add("Authorization", $"Bearer {tokenInfo.Access_Token}");
                                                 //message.Headers.Add("unit4_id", _config.Unit4IdClaim);
+                                                var payloadString = JsonConvert.SerializeObject(payload);
 
-
-                                                var message = await _messageFactory.CreateMessage(HttpMethod.Put, apiUri, payload.ToString());
+                                                var message = await _messageFactory.CreateMessage(HttpMethod.Put, apiUri, payloadString);
                                                 //Send the request and wait for the response
                                                 //var result = await _unit4Service.SendAsync(request.Path, queryPayload.Item1, queryPayload.Item2, request.Path.Contains("update"));
 
