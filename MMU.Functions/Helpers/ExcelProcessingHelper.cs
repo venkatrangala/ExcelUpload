@@ -1,25 +1,17 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Mmu.Common.Api.Service.Interfaces;
-using Mmu.Common.Api.Service.Models;
-using Mmu.Integration.Common.Utilities.Data;
 using Mmu.Integration.Common.Utilities.Data.Interfaces;
 using Mmu.Integration.Common.Utilities.Management.Interfaces;
 using MMU.Functions.Models;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using NPOI.SS.UserModel;
 using NPOI.SS.Util;
 using NPOI.XSSF.UserModel;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace MMU.Functions.Helpers
@@ -64,7 +56,7 @@ namespace MMU.Functions.Helpers
 
             //const string folderName = "ExcelUploads";
             var folderPath = Path.Combine(Directory.GetCurrentDirectory());
-            var fileEntries = Directory.GetFiles(folderPath);
+            //var fileEntries = Directory.GetFiles(folderPath);
             var fileName = folderPath + "\\ExcelFile.xlsx";
 
             var ms = await azureStorageBlobOptions.GetAsync(containerName, blobName);
@@ -77,8 +69,7 @@ namespace MMU.Functions.Helpers
                 fs.Flush();
             }
 
-
-            UpdateExcelForBlobStorageByName(fileName);
+            await UpdateExcelForBlobStorageByNameAsync(fileName);
 
             await using var send = new FileStream(fileName, FileMode.Open, FileAccess.Read);
 
@@ -100,7 +91,7 @@ namespace MMU.Functions.Helpers
         /// </summary>
         /// <param name="fileName"></param>
         /// <returns></returns>
-        public string UpdateExcelForBlobStorageByName(string fileName)
+        public async Task<string> UpdateExcelForBlobStorageByNameAsync(string fileName)
         {
             try
             {
@@ -117,7 +108,7 @@ namespace MMU.Functions.Helpers
                 switch (sheetName.ToLower())
                 {
                     case "cot_data_input_sheet":
-                        ProcessCoDataInputExcelSheetAsync(fileName, sheetName);
+                        await ProcessCoDataInputExcelSheetAsync(fileName, sheetName);
                         break;
                     default:
                         break;
@@ -165,8 +156,6 @@ namespace MMU.Functions.Helpers
                 dynamic errorValue = null;
                 int recordId = 0;
                 int id;
-
-                Microsoft.AspNetCore.Http.HttpResponse httpResponse;
                 HttpResponseMessage httpResponseMessage;
                 var updateResult = 0;
                 int j = 1; //Leave the first column blank
@@ -184,6 +173,7 @@ namespace MMU.Functions.Helpers
                         {
                             courseId = row.GetCell(j).StringCellValue;
                         }
+
                         //if (reference.StartsWith("C")) //Course Title
                         //{
                         //    courseTitle = row.GetCell(j).StringCellValue;
@@ -205,10 +195,11 @@ namespace MMU.Functions.Helpers
                             {
                                 var query = @"Select cot.id from ACCourseofferingTemplate cot
                                             Where cot.courseid ='" + courseId + "'";
-
+                                
                                 try
                                 {
-                                    recordId = _dataService.Query<int>("u4clone", query).FirstOrDefault();
+                                    recordId = 2;
+                                    //recordId = _dataService.Query<int>("u4clone", query).FirstOrDefault();
                                 }
                                 catch (Exception ex)
                                 {
@@ -216,7 +207,7 @@ namespace MMU.Functions.Helpers
                                 }
                             }
 
-                            if (recordId != null && Convert.ToInt32(recordId) > 0)
+                            if (recordId > 0)
                             {
                                 if (reference.StartsWith("D"))
                                 {
@@ -228,90 +219,82 @@ namespace MMU.Functions.Helpers
                                     endDate = row.GetCell(j).DateCellValue.ToString();
                                 }
 
-                                //TODO: Validate Dates
                                 if (string.IsNullOrEmpty(successValue) && string.IsNullOrEmpty(errorValue) && !string.IsNullOrEmpty(startDate) && !string.IsNullOrEmpty(endDate))
                                 {
-                                    //if (reference.StartsWith("K") )//CourseLevelid
+                                    bool validDates = ValidateDates(startDate, endDate);
+
+                                    if (validDates)
                                     {
-                                        bool validDates = ValidateDates(startDate, endDate);
-
-                                        if (validDates)
+                                        //Call Api to Update Start & End Dates
+                                        try
                                         {
-                                            //TODO: Call Api to Update Start & End Dates
+                                            //TODO
+                                            var apiUri = new Uri("https://u4sm-preview-mmu.unit4cloud.com/U4SMapi/api/CourseOfferingTemplate/put?id=1");
 
-                                            try
+                                            var payload = new CourseOfferingTemplate
                                             {
-                                                //TODO: What type of response do we get here 
-                                                //httpResponse = httpClient call here
-                                                var apiUri = new Uri("https://u4sm-preview-mmu.unit4cloud.com/U4SMapi/api/CourseOfferingTemplate/put?id=1");
+                                                Id = recordId,
+                                                StartDate = Convert.ToDateTime(startDate),
+                                                EndDate = Convert.ToDateTime(endDate)
+                                            };
 
-                                                var payload = new CourseOfferingTemplate
-                                                {
-                                                    Id = recordId,
-                                                    StartDate = Convert.ToDateTime(startDate),
-                                                    EndDate = Convert.ToDateTime(endDate)
-                                                };
-
-                                                //var message = new HttpRequestMessage(HttpMethod.Put, apiUri)
-                                                //{
-                                                //    Content = new StringContent(payload.ToString(), Encoding.UTF8, "application/json")
-                                                //};
-                                                //var tokenInfo = await _tokenService.GetToken();
-                                                //message.Headers.Add("Authorization", $"Bearer {tokenInfo.Access_Token}");
-                                                //message.Headers.Add("unit4_id", _config.Unit4IdClaim);
-                                                var payloadString = JsonConvert.SerializeObject(payload);
-
-                                                var message = await _messageFactory.CreateMessage(HttpMethod.Put, apiUri, payloadString);
-                                                //Send the request and wait for the response
-                                                //var result = await _unit4Service.SendAsync(request.Path, queryPayload.Item1, queryPayload.Item2, request.Path.Contains("update"));
-
-                                                httpResponseMessage = await _httpClient.SendAsync(message);
-
-                                                if (httpResponseMessage.StatusCode.Equals(System.Net.HttpStatusCode.OK))
-                                                {
-                                                    //TODO: Update success
-                                                    successValue = "Success";
-                                                }
-                                                else //failure
-                                                {
-                                                    errorValue = httpResponseMessage.Content.ReadAsStringAsync();
-                                                }
+                                            var payloadString = JsonConvert.SerializeObject(payload);
+                                            //TODO: Uncomment for live
+                                            var message = await _messageFactory.CreateMessage(HttpMethod.Put, apiUri, payloadString);
+                                            httpResponseMessage = await _httpClient.SendAsync(message);
+                                            if (httpResponseMessage.StatusCode.Equals(System.Net.HttpStatusCode.OK))
+                                            //if (1 == 1)
+                                            {
+                                                //TODO: Update success
+                                                successValue = "Success";
                                             }
-                                            catch (Exception ex)
+                                            else //failure
                                             {
-                                                errorValue = ex;
+                                                errorValue = httpResponseMessage.Content.ReadAsStringAsync();
                                             }
                                         }
-                                        else
+                                        catch (Exception ex)
                                         {
-                                            invalidDates = "Invalid Start / End Dates";
-                                            successValue = "Fail";
+                                            errorValue = ex;
                                         }
                                     }
-
-                                    if (reference.StartsWith("L")) // Result : Success Or Failure
+                                    else
                                     {
-                                        using FileStream wstr = new FileStream(fileName, FileMode.Create, FileAccess.Write);
-                                        cell = row.GetCell(j);
-                                        cell.SetCellValue(successValue != null ? successValue : "Fail");
-                                        workbook.Write(wstr);
-                                        wstr.Close();
+                                        invalidDates = "Invalid Start / End Dates";
+                                        successValue = "Fail";
                                     }
+                                }
 
-                                    if (reference.StartsWith("M") && errorValue != null) // Error Reason
-                                    {
-                                        using FileStream wstr = new FileStream(fileName, FileMode.Create, FileAccess.Write);
-                                        cell = row.GetCell(j);
-                                        cell.SetCellValue(errorValue);
-                                        workbook.Write(wstr);
-                                        wstr.Close();
-                                    }
+                                if (reference.StartsWith("K")) // RecordId
+                                {
+                                    using FileStream wstr = new FileStream(fileName, FileMode.Create, FileAccess.Write);
+                                    cell = row.GetCell(j);
+                                    cell.SetCellValue(recordId);
+                                    workbook.Write(wstr);
+                                    wstr.Close();
+                                }
+
+                                if (reference.StartsWith("L")) // Result : Success Or Failure
+                                {
+                                    using FileStream wstr = new FileStream(fileName, FileMode.Create, FileAccess.Write);
+                                    cell = row.GetCell(j);
+                                    cell.SetCellValue(successValue != null ? successValue : "Fail");
+                                    workbook.Write(wstr);
+                                    wstr.Close();
+                                }
+
+                                if (reference.StartsWith("M") && errorValue != null) // Error Reason
+                                {
+                                    using FileStream wstr = new FileStream(fileName, FileMode.Create, FileAccess.Write);
+                                    cell = row.GetCell(j);
+                                    cell.SetCellValue(errorValue);
+                                    workbook.Write(wstr);
+                                    wstr.Close();
                                 }
                             }
                             else
                             {
-                                //Log on to Excel and continue
-                                //TODO: What needs doing?
+                                //Log error to Excel and continue
                                 if (reference.StartsWith("M") && (recordId == 0)) // Error Reason
                                 {
                                     using FileStream noIDStream = new FileStream(fileName, FileMode.Create, FileAccess.Write);
@@ -323,10 +306,9 @@ namespace MMU.Functions.Helpers
                             }
                         }
                     }
-
-                    rstr.Close();
                 }
             }
+            rstr.Close();
         }
 
         private bool ValidateDates(string startDate, string endDate)
