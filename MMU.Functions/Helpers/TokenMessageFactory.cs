@@ -4,6 +4,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
+using Mmu.Common.Api.Service.Authentication;
 using Mmu.Common.Api.Service.Interfaces;
 using Mmu.Common.Api.Service.Models;
 using MMU.Functions.Interfaces;
@@ -17,7 +18,7 @@ namespace MMU.Functions.Helpers
 
     public class TokenMessageFactory : IHttpRequestMessageFactory
     {
-        private readonly ITokenService<TokenInfo> _tokenService;
+        private ITokenService<TokenInfo> _tokenService;
         private readonly EndPointConfigU4 _config;
 
         public TokenMessageFactory(ITokenService<TokenInfo> tokenService, IOptions<EndPointConfigU4> options)

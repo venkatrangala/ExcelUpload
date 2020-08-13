@@ -22,9 +22,9 @@ namespace MMU.Functions
         private readonly IConfiguration _configuration;
         private readonly ILoggerInjector _loggerProvider;
         private readonly IDataService _dataService;
-        private readonly ITokenService<TokenInfo> _tokenService;
+        //private readonly ITokenService<TokenInfo> _tokenService;
         private readonly IHttpRequestMessageFactory _messageFactory;
-        private readonly IOptions<EndPointConfigU4> _config;
+        //private readonly IOptions<EndPointConfigU4> _config;
 
         public ProcessExcelFunction(ILoggerInjector loggerProvider, IDataService dataService, IConfiguration configuration,
             IHttpRequestMessageFactory messageFactory,
@@ -35,8 +35,8 @@ namespace MMU.Functions
             _loggerProvider = loggerProvider;
             _configuration = configuration;
             _messageFactory = messageFactory;
-            _tokenService = tokenService;
-            _config = options;
+            //_tokenService = tokenService;
+            //_config = options;
             //_appSettings = appSettings.Value;
             //_logger = logger;
         }
@@ -47,7 +47,7 @@ namespace MMU.Functions
             ILogger log)
         {
 
-            ExcelProcessingHelper excelProcessingHelper = new ExcelProcessingHelper(_loggerProvider, _dataService,_configuration, _messageFactory, _tokenService, _config);
+            ExcelProcessingHelper excelProcessingHelper = new ExcelProcessingHelper(_loggerProvider, _dataService, _configuration, _messageFactory); //, _tokenService, _config);
 
             string blobName = "UpdateCourseOfferingCourseOfferingTemplate.xlsx";
 

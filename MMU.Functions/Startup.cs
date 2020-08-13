@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Mmu.Common.Api.Service.Authentication;
 using Mmu.Common.Api.Service.Interfaces;
 using Mmu.Functions;
+using Mmu.Functions.Extensions;
 using Mmu.Integration.Common.Utilities.Data;
 using Mmu.Integration.Common.Utilities.Data.Extensions;
 using Mmu.Integration.Common.Utilities.FieldTransform;
@@ -30,6 +31,7 @@ namespace Mmu.Functions
             List<KeyValuePair<string, string>> list = config.AsEnumerable().ToList();
 
             //builder.Services.AddLogging();
+            builder.Services.AddU4Service(config);
             builder.Services.AddDataService();
             builder.Services.AddSingleton<IConfiguration>(config);
             builder.Services.AddScoped<ITransformer, U4FlexiFieldTransformer>();

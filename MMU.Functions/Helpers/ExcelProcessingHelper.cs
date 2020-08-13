@@ -31,21 +31,22 @@ namespace MMU.Functions.Helpers
         private readonly IDataService _dataService;
         private readonly IConfiguration _configuration;
         private readonly HttpClient _httpClient;
-        private readonly ITokenService<TokenInfo> _tokenService;
+        //private readonly ITokenService<TokenInfo> _tokenService;
         private readonly IHttpRequestMessageFactory _messageFactory;
-        private readonly EndPointConfigU4 _config;
+        //private readonly EndPointConfigU4 _config;
         public ExcelProcessingHelper(ILoggerInjector loggerProvider,
             IDataService dataService, IConfiguration configuration,
-            IHttpRequestMessageFactory messageFactory,
-            ITokenService<TokenInfo> tokenService,
-            IOptions<EndPointConfigU4> options)//IOptions<AppSettings> appSettings, ILogger<ExcelProcessingHelper> logger,
+            IHttpRequestMessageFactory messageFactory
+            //ITokenService<TokenInfo> tokenService,
+            //IOptions<EndPointConfigU4> options
+            )//IOptions<AppSettings> appSettings, ILogger<ExcelProcessingHelper> logger,
         {
             _dataService = dataService;
             _loggerProvider = loggerProvider;
             _configuration = configuration;
             _messageFactory = messageFactory;
-            _tokenService = tokenService;
-            _config = options.Value;
+            //_tokenService = tokenService;
+            //_config = options.Value;
             //_appSettings = appSettings.Value;
             //_logger = logger;
         }
@@ -248,18 +249,16 @@ namespace MMU.Functions.Helpers
                                                     EndDate = Convert.ToDateTime(endDate)
                                                 };
 
-                                                var message = new HttpRequestMessage(HttpMethod.Put, apiUri)
-                                                {
-                                                    Content = new StringContent(payload.ToString(), Encoding.UTF8, "application/json")
-                                                };
-
-                                                var tokenInfo = await _tokenService.GetToken();
-
-                                                message.Headers.Add("Authorization", $"Bearer {tokenInfo.Access_Token}");
-                                                message.Headers.Add("unit4_id", _config.Unit4IdClaim);
+                                                //var message = new HttpRequestMessage(HttpMethod.Put, apiUri)
+                                                //{
+                                                //    Content = new StringContent(payload.ToString(), Encoding.UTF8, "application/json")
+                                                //};
+                                                //var tokenInfo = await _tokenService.GetToken();
+                                                //message.Headers.Add("Authorization", $"Bearer {tokenInfo.Access_Token}");
+                                                //message.Headers.Add("unit4_id", _config.Unit4IdClaim);
 
 
-                                               // var message = await _messageFactory.CreateMessage(HttpMethod.Put, apiUri, payload.ToString());
+                                                var message = await _messageFactory.CreateMessage(HttpMethod.Put, apiUri, payload.ToString());
                                                 //Send the request and wait for the response
                                                 //var result = await _unit4Service.SendAsync(request.Path, queryPayload.Item1, queryPayload.Item2, request.Path.Contains("update"));
 
