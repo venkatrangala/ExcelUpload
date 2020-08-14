@@ -291,48 +291,48 @@ namespace MMU.Functions.Helpers
                                     }
 
                                     //bool validDates = ValidateDates(startDate, endDate);
-
-                                    //if (validDates)
-
-                                    //Call Api to Update Start & End Dates
-                                    try
+                                    if (payload.EnrollmentModeId > 0)
                                     {
-                                        //TODO
-                                        //var apiUri = new Uri("https://u4sm-preview-mmu.unit4cloud.com/U4SMapi/api/CourseOfferingTemplate/put?id=1");
-
-                                        var apiUri = new Uri("https://u4sm-preview-mmu.unit4cloud.com/U4SMapi/api/CourseOfferingTemplate/put?id=" + recordId);
-                                        //https://u4sm-accept05-mmu-sit.unit4cloud.com/U4SMapi/api/CourseOffering/get?id=1
-
-                                        //var payload = new CourseOfferingTemplate
-                                        //{
-                                        //    Id = recordId,
-                                        //    MinEnrolled = 1,
-                                        //    MaxEnrolled = 1,
-                                        //    PriceGroupId = 1,
-                                        //    CourseLevelId = 1,
-                                        //    EnrollmentModeId = 1
-                                        //    //StartDate = Convert.ToDateTime(startDate),
-                                        //    //EndDate = Convert.ToDateTime(endDate)
-                                        //};
-
-                                        var payloadString = JsonConvert.SerializeObject(payload);
-                                        //TODO: Uncomment for live
-                                        var message = await _messageFactory.CreateMessage(HttpMethod.Put, apiUri, payloadString);
-                                        httpResponseMessage = await _httpClient.SendAsync(message);
-                                        if (httpResponseMessage.StatusCode.Equals(System.Net.HttpStatusCode.OK))
-                                        //if (1 == 1)
+                                        //Call Api to Update 
+                                        try
                                         {
-                                            //TODO: Update success
-                                            successValue = "Success";
+                                            //TODO
+                                            //var apiUri = new Uri("https://u4sm-preview-mmu.unit4cloud.com/U4SMapi/api/CourseOfferingTemplate/put?id=1");
+
+                                            var apiUri = new Uri("https://u4sm-preview-mmu.unit4cloud.com/U4SMapi/api/CourseOfferingTemplate/put?id=" + recordId);
+                                            //https://u4sm-accept05-mmu-sit.unit4cloud.com/U4SMapi/api/CourseOffering/get?id=1
+
+                                            //var payload = new CourseOfferingTemplate
+                                            //{
+                                            //    Id = recordId,
+                                            //    MinEnrolled = 1,
+                                            //    MaxEnrolled = 1,
+                                            //    PriceGroupId = 1,
+                                            //    CourseLevelId = 1,
+                                            //    EnrollmentModeId = 1
+                                            //    //StartDate = Convert.ToDateTime(startDate),
+                                            //    //EndDate = Convert.ToDateTime(endDate)
+                                            //};
+
+                                            var payloadString = JsonConvert.SerializeObject(payload);
+                                            //TODO: Uncomment for live
+                                            var message = await _messageFactory.CreateMessage(HttpMethod.Put, apiUri, payloadString);
+                                            httpResponseMessage = await _httpClient.SendAsync(message);
+                                            if (httpResponseMessage.StatusCode.Equals(System.Net.HttpStatusCode.OK))
+                                            //if (1 == 1)
+                                            {
+                                                //TODO: Update success
+                                                successValue = "Success";
+                                            }
+                                            else //failure
+                                            {
+                                                errorValue = httpResponseMessage.Content.ReadAsStringAsync();
+                                            }
                                         }
-                                        else //failure
+                                        catch (Exception ex)
                                         {
-                                            errorValue = httpResponseMessage.Content.ReadAsStringAsync();
+                                            errorValue = ex;
                                         }
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        errorValue = ex;
                                     }
 
                                     //else
