@@ -50,7 +50,7 @@ namespace MMU.Functions.Helpers
         //[AllowAnonymous]
         public async Task<IActionResult> ReadFilesFromBlob(string blobName)
         {
-            var containerName = "excel";
+           var containerName = "excel";
             //string blobName = "rv.xlsx";
             var azureStorageBlobOptions = new AzureStorageBlobOptions(_configuration);
 
@@ -122,6 +122,11 @@ namespace MMU.Functions.Helpers
 
         private async Task ProcessCoDataInputExcelSheetAsync(string fileName, string sheetName)
         {
+            //TODO: Fetch using DataService
+            //Select BusinessMeaningName, id PriceGroupId from BCPriceGroup
+            //Select BusinessMeaningName,id Courselevelid from ACCourselevel
+            //Select BusinessMeaningName,id EnrollmentmodeId from ACEnrollmentMode
+
             //CourseId
             //CourseTitle
             //StartDate
@@ -141,6 +146,7 @@ namespace MMU.Functions.Helpers
             IRow headerRow = sheet.GetRow(1); //Send Row is Header 
             int cellCount = headerRow.LastCellNum;
 
+            string courseIdColumn = "B";
             for (int i = (sheet.FirstRowNum + 1); i <= sheet.LastRowNum; i++) //Values from 2nd row
             {
                 IRow row = sheet.GetRow(i);
@@ -169,7 +175,32 @@ namespace MMU.Functions.Helpers
                         ICell cell;
 
                         //Get the CourseId & AcademicPeriod & fetch RecordID
-                        if (reference.StartsWith("B")) //CourseId
+                        if (reference.StartsWith(courseIdColumn)) //CourseId
+                        {
+                            courseId = row.GetCell(j).StringCellValue;
+                        }
+                        
+
+
+
+
+                        if (reference.StartsWith(MinEnrolledColumn)) //MinEnrolled
+                        {
+                            courseId = row.GetCell(j).StringCellValue;
+                        }
+                        if (reference.StartsWith(MaxEnrolledColumn)) //MaxEnrolled
+                        {
+                            courseId = row.GetCell(j).StringCellValue;
+                        }
+                        if (reference.StartsWith(PriceGroupIdColumn)) //PriceGroupIdColumn
+                        {
+                            courseId = row.GetCell(j).StringCellValue;
+                        }
+                        if (reference.StartsWith(CourseLevelIdColumn)) //CourseLevelIdColumn
+                        {
+                            courseId = row.GetCell(j).StringCellValue;
+                        }
+                        if (reference.StartsWith(EnrollmentModeIdColumn)) //EnrollmentModeIdColumn
                         {
                             courseId = row.GetCell(j).StringCellValue;
                         }
@@ -209,21 +240,22 @@ namespace MMU.Functions.Helpers
 
                             if (recordId > 0)
                             {
-                                if (reference.StartsWith("D"))
-                                {
-                                    startDate = row.GetCell(j).DateCellValue.ToString();
-                                }
+                                //if (reference.StartsWith("D"))
+                                //{
+                                //    startDate = row.GetCell(j).DateCellValue.ToString();
+                                //}
 
-                                if (reference.StartsWith("E"))
-                                {
-                                    endDate = row.GetCell(j).DateCellValue.ToString();
-                                }
+                                //if (reference.StartsWith("E"))
+                                //{
+                                //    endDate = row.GetCell(j).DateCellValue.ToString();
+                                //}
 
-                                if (string.IsNullOrEmpty(successValue) && string.IsNullOrEmpty(errorValue) && !string.IsNullOrEmpty(startDate) && !string.IsNullOrEmpty(endDate))
+                                if (string.IsNullOrEmpty(successValue) && string.IsNullOrEmpty(errorValue)) 
+                                    //&& !string.IsNullOrEmpty(startDate) && !string.IsNullOrEmpty(endDate))
                                 {
-                                    bool validDates = ValidateDates(startDate, endDate);
+                                    //bool validDates = ValidateDates(startDate, endDate);
 
-                                    if (validDates)
+                                    //if (validDates)
                                     {
                                         //Call Api to Update Start & End Dates
                                         try
@@ -234,8 +266,13 @@ namespace MMU.Functions.Helpers
                                             var payload = new CourseOfferingTemplate
                                             {
                                                 Id = recordId,
-                                                StartDate = Convert.ToDateTime(startDate),
-                                                EndDate = Convert.ToDateTime(endDate)
+                                                MinEnrolled = 
+                                                MaxEnrolled = 
+                                                PriceGroupId = 
+                                                CourseLevelId = 
+                                                EnrollmentModeId = 
+                                                //StartDate = Convert.ToDateTime(startDate),
+                                                //EndDate = Convert.ToDateTime(endDate)
                                             };
 
                                             var payloadString = JsonConvert.SerializeObject(payload);
