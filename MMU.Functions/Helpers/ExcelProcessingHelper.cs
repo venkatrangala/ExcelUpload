@@ -123,11 +123,6 @@ namespace MMU.Functions.Helpers
 
         private async Task ProcessCoDataInputExcelSheetAsync(string fileName, string sheetName)
         {
-            //TODO: Fetch using DataService
-            //Select BusinessMeaningName, id PriceGroupId from BCPriceGroup
-            //Select BusinessMeaningName,id Courselevelid from ACCourselevel
-            //Select BusinessMeaningName,id EnrollmentmodeId from ACEnrollmentMode
-
             var priceGroupQuery = @"Select Id, BusinessMeaningName from BCPriceGroup";
             var courseLevelQuery = @"Select Id, BusinessMeaningName from ACCourselevel";
             var enrollmentModelQuery = @"Select Id, BusinessMeaningName from ACEnrollmentMode";
@@ -138,7 +133,6 @@ namespace MMU.Functions.Helpers
 
             try
             {
-                //recordId = _dataService.Query<int>("u4clone", query).FirstOrDefault();
                 priceGroupList = _dataService.Query<BusinessNames>("u4clone", priceGroupQuery).ToList();
                 courseLevelList = _dataService.Query<BusinessNames>("u4clone", courseLevelQuery).ToList();
                 enrollmentModelList = _dataService.Query<BusinessNames>("u4clone", enrollmentModelQuery).ToList();
@@ -265,29 +259,45 @@ namespace MMU.Functions.Helpers
                                 {
                                     if (reference.StartsWith(MinEnrolledColumn)) //MinEnrolled
                                     {
-                                        payload.MinEnrolled = Convert.ToInt32(row.GetCell(j).StringCellValue);
+                                        if (string.IsNullOrEmpty(row.GetCell(j).NumericCellValue.ToString()))
+                                        {
+                                            //TODO: Skip Record
+                                            successValue = "Skip Record";
+                                        }
+                                        else
+                                        {
+                                            payload.MinEnrolled = Convert.ToInt32(row.GetCell(j).NumericCellValue);
+                                        }
                                     }
                                     if (reference.StartsWith(MaxEnrolledColumn)) //MaxEnrolled
                                     {
-                                        payload.MaxEnrolled = Convert.ToInt32(row.GetCell(j).StringCellValue);
+                                        if (string.IsNullOrEmpty(row.GetCell(j).NumericCellValue.ToString()))
+                                        {
+                                            //TODO: Skip Record
+                                            successValue = "Skip Record";
+                                        }
+                                        else
+                                        {
+                                            payload.MaxEnrolled = Convert.ToInt32(row.GetCell(j).NumericCellValue);
+                                        }
                                     }
                                     if (reference.StartsWith(PriceGroupIdColumn)) //PriceGroupId
                                     {
                                         //TODO:
-                                        //payload.PriceGroupId = Convert.ToInt32(row.GetCell(j).StringCellValue);
                                         payload.PriceGroupId = Convert.ToInt32(priceGroupList.Where(x => x.BusinessMeaningName == row.GetCell(j).StringCellValue).Select(y => y.Id));
+                                        //payload.PriceGroupId = 123;
                                     }
                                     if (reference.StartsWith(CourseLevelIdColumn)) //CourseLevelId
                                     {
                                         //TODO:
-                                        //payload.CourseLevelId = Convert.ToInt32(row.GetCell(j).StringCellValue);
                                         payload.CourseLevelId = Convert.ToInt32(courseLevelList.Where(x => x.BusinessMeaningName == row.GetCell(j).StringCellValue).Select(y => y.Id));
+                                        //payload.CourseLevelId = 234;
                                     }
                                     if (reference.StartsWith(EnrollmentModeIdColumn)) //EnrollmentModeId
                                     {
                                         //TODO:
-                                        //payload.EnrollmentModeId = Convert.ToInt32(row.GetCell(j).StringCellValue);
                                         payload.EnrollmentModeId = Convert.ToInt32(enrollmentModelList.Where(x => x.BusinessMeaningName == row.GetCell(j).StringCellValue).Select(y => y.Id));
+                                        //payload.EnrollmentModeId = 345;
                                     }
 
                                     //bool validDates = ValidateDates(startDate, endDate);
