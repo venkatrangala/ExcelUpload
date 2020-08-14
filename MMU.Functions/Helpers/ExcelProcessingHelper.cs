@@ -284,19 +284,20 @@ namespace MMU.Functions.Helpers
                                     if (reference.StartsWith(PriceGroupIdColumn)) //PriceGroupId
                                     {
                                         //TODO:
-                                        payload.PriceGroupId = Convert.ToInt32(priceGroupList.Where(x => x.BusinessMeaningName == row.GetCell(j).StringCellValue).Select(y => y.Id));
+                                        //var temp = priceGroupList.Find(x => x.BusinessMeaningName == row.GetCell(j).StringCellValue).Id;
+                                        payload.PriceGroupId = priceGroupList.Find(x => x.BusinessMeaningName == row.GetCell(j).StringCellValue).Id;
                                         //payload.PriceGroupId = 123;
                                     }
                                     if (reference.StartsWith(CourseLevelIdColumn)) //CourseLevelId
                                     {
                                         //TODO:
-                                        payload.CourseLevelId = Convert.ToInt32(courseLevelList.Where(x => x.BusinessMeaningName == row.GetCell(j).StringCellValue).Select(y => y.Id));
+                                        payload.CourseLevelId = courseLevelList.Find(x => x.BusinessMeaningName == row.GetCell(j).StringCellValue).Id;
                                         //payload.CourseLevelId = 234;
                                     }
                                     if (reference.StartsWith(EnrollmentModeIdColumn)) //EnrollmentModeId
                                     {
                                         //TODO:
-                                        payload.EnrollmentModeId = Convert.ToInt32(enrollmentModelList.Where(x => x.BusinessMeaningName == row.GetCell(j).StringCellValue).Select(y => y.Id));
+                                        payload.EnrollmentModeId = enrollmentModelList.Find(x => x.BusinessMeaningName == row.GetCell(j).StringCellValue).Id;
                                         //payload.EnrollmentModeId = 345;
                                     }
 
